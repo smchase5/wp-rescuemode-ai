@@ -211,9 +211,14 @@ class Conflict_Scanner_Endpoint
 		$has_error = false;
 		$error_lines = [];
 		foreach ($new_lines as $line) {
+			// Ignore errors from our own plugin to prevent false positives
+			if (false !== strpos($line, 'wp-rescuemode-ai')) {
+				continue;
+			}
+
 			if (stripos($line, 'Fatal error') !== false || stripos($line, 'Parse error') !== false) {
 				$has_error = true;
-				$error_lines[] = $line;
+				$error_lines[] = wprai_humanize_error($line);
 			}
 		}
 

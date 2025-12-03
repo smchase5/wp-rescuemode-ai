@@ -44,6 +44,10 @@ function wprai_tail_file($path, $max_lines = 200, $max_bytes = 200000)
 	}
 
 	$size = filesize($path);
+	if (!$size) {
+		return [];
+	}
+
 	$chunk = ($size > $max_bytes) ? $max_bytes : $size;
 
 	$handle = fopen($path, 'r');
@@ -58,9 +62,31 @@ function wprai_tail_file($path, $max_lines = 200, $max_bytes = 200000)
 	$data = fread($handle, $chunk);
 	fclose($handle);
 
+	if ($data === false) {
+		return [];
+	}
+
 	$lines = explode("\n", (string) $data);
 
 	return array_slice($lines, -1 * $max_lines);
+}
+
+/**
+ * Make error messages human readable.
+ *
+ * @param string $line Raw log line.
+ * @return string
+ */
+function wprai_humanize_error($line)
+{
+	// Extract message after "PHP Fatal error:" or similar
+	if (preg_match('/PHP (?:Fatal|Parse) error:\s+(.+?) in /', $line, $matches)) {
+		return trim($matches[1]);
+	}
+
+	// Fallback: clean up timestamp
+	$line = preg_replace('/^\[[^\]]+\]\s+/', '', $line);
+	return substr($line, 0, 150) . (strlen($line) > 150 ? '...' : '');
 }
 
 /**
