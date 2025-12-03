@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+
+  /* Neutral background & foreground */
+  --background: 210 40% 98%;
+  --foreground: 220 15% 15%;
+
+  /* Card and popover surfaces */
+  --card: 0 0% 100%;
+  --card-foreground: 220 15% 15%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 15% 15%;
+
+  /* Muted areas, subtitles, etc. */
+  --muted: 215 33% 95%;
+  --muted-foreground: 215 16% 35%;
+
+  /* Borders, inputs, rings */
+  --border: 215 20% 82%;
+  --input: 0 0% 100%;
+  --ring: 199 89% 48%;
+
+  /* Destructive actions */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Default accent (suite default; override per plugin) */
+  --accent: 199 89% 48%;
+  --accent-foreground: 210 10% 10%;
+}
+
+/* Plugin-specific accent override: warm orange for RescueMode */
+:root {
+  --accent: 24 95% 58%;           /* #f97316 */
+  --accent-foreground: 33 100% 10%;
+}

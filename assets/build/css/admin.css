@@ -1,0 +1,453 @@
+/* Admin skin for WP RescueMode AI (handcrafted, replace with Vite/Tailwind build later). */
+:root {
+	--background: 210 40% 98%;
+	--foreground: 220 15% 15%;
+	--card: 0 0% 100%;
+	--card-foreground: 220 15% 15%;
+	--muted: 215 33% 95%;
+	--muted-foreground: 215 16% 35%;
+	--accent: 24 95% 58%;
+	--accent-foreground: 33 100% 10%;
+
+	--wprai-bg: hsl(var(--background));
+	--wprai-card: hsl(var(--card));
+	--wprai-card-2: hsl(var(--muted));
+	--wprai-text: hsl(var(--foreground));
+	--wprai-muted: hsl(var(--muted-foreground));
+	--wprai-accent: hsl(var(--accent));
+	--wprai-accent-foreground: hsl(var(--accent-foreground));
+	--wprai-radius-lg: 12px;
+	--wprai-radius-md: 10px;
+	--wprai-radius-sm: 8px;
+	color-scheme: light;
+}
+
+#wprai-root {
+	font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	color: var(--wprai-text);
+	background: var(--wprai-bg);
+	padding: 22px;
+	margin: 12px 0;
+	border-radius: var(--wprai-radius-lg);
+	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+	border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.wprai-shell a {
+	text-decoration: none;
+}
+
+.wprai-header {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	align-items: flex-start;
+}
+
+.wprai-title {
+	margin: 6px 0 4px;
+	font-size: 22px;
+	color: var(--wprai-text);
+}
+
+.wprai-subtle {
+	color: var(--wprai-muted);
+	font-size: 13px;
+	line-height: 1.55;
+	margin: 0;
+}
+
+.wprai-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	background: color-mix(in srgb, var(--wprai-accent) 12%, #fff);
+	color: var(--wprai-text);
+	border: 1px solid color-mix(in srgb, var(--wprai-accent) 30%, transparent);
+}
+
+.wprai-header-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.wprai-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 12px 16px;
+	background: color-mix(in srgb, var(--wprai-accent) 85%, #fff);
+	color: var(--wprai-accent-foreground, #0b0f1a);
+	font-weight: 700;
+	border: none;
+	border-radius: var(--wprai-radius-sm);
+	cursor: pointer;
+	transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+	box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+	letter-spacing: 0.01em;
+}
+
+.wprai-button:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+}
+
+.wprai-button.ghost {
+	background: #fff;
+	color: var(--wprai-text);
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	box-shadow: none;
+}
+
+.wprai-button.secondary {
+	background: var(--wprai-card-2);
+	color: var(--wprai-text);
+	box-shadow: none;
+	border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.wprai-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: 16px;
+	margin-top: 18px;
+}
+
+.wprai-card {
+	background: var(--wprai-card);
+	border: 1px solid rgba(15, 23, 42, 0.08);
+	border-radius: var(--wprai-radius-lg);
+	padding: 20px;
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.wprai-card h3 {
+	margin: 0 0 6px;
+	color: #fff;
+	font-size: 16px;
+}
+
+.wprai-card-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 6px;
+}
+
+.wprai-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	color: var(--wprai-text);
+	background: rgba(15, 23, 42, 0.05);
+}
+
+.wprai-chip.success {
+	border-color: rgba(74, 222, 128, 0.5);
+	background: rgba(74, 222, 128, 0.15);
+	color: #166534;
+}
+
+.wprai-chip.pending {
+	border-color: rgba(250, 204, 21, 0.5);
+	background: rgba(250, 204, 21, 0.15);
+	color: #854d0e;
+}
+
+.wprai-chip.neutral {
+	border-color: rgba(148, 163, 184, 0.4);
+	background: rgba(148, 163, 184, 0.12);
+	color: #0f172a;
+}
+
+.wprai-token {
+	font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+	padding: 12px 14px;
+	border-radius: var(--wprai-radius-sm);
+	background: #f8fafc;
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	color: #0f172a;
+	word-break: break-all;
+	margin: 12px 0 10px;
+}
+
+.wprai-inline-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.wprai-hero-button-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin: 10px 0 14px;
+}
+
+.wprai-button-large {
+	width: 240px;
+	height: 54px;
+	font-size: 16px;
+}
+
+.wprai-nav {
+	display: inline-flex;
+	gap: 8px;
+	margin: 12px 0 16px;
+}
+
+.wprai-nav-link {
+	padding: 8px 12px;
+	border-radius: var(--wprai-radius-sm);
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	color: var(--wprai-text);
+	text-decoration: none;
+	background: var(--wprai-card-2);
+	transition: all 120ms ease;
+}
+
+.wprai-nav-link:hover {
+	color: var(--wprai-text);
+	border-color: color-mix(in srgb, var(--wprai-accent) 30%, transparent);
+}
+
+.wprai-nav-link.is-active {
+	color: var(--wprai-text);
+	border-color: color-mix(in srgb, var(--wprai-accent) 50%, transparent);
+	background: color-mix(in srgb, var(--wprai-accent) 15%, #fff);
+}
+
+.wprai-status-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.wprai-status-chip {
+	padding: 12px;
+	border-radius: var(--wprai-radius-sm);
+	background: var(--wprai-card-2);
+	border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.wprai-status-label {
+	display: block;
+	color: var(--wprai-muted);
+	font-size: 12px;
+	margin-bottom: 6px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.wprai-status-value {
+	color: #fff;
+	font-weight: 600;
+	font-size: 15px;
+}
+.wprai-scanner-hero .wprai-status-value {
+	color: #0f172a;
+}
+
+.wprai-form {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 6px;
+}
+
+.wprai-label {
+	color: #fff;
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.wprai-input {
+	background: #f8fafc;
+	border: 1px solid rgba(15, 23, 42, 0.18);
+	border-radius: var(--wprai-radius-sm);
+	padding: 12px;
+	color: #0f172a;
+	width: 100%;
+}
+
+.wprai-input:focus {
+	outline: none;
+	border-color: color-mix(in srgb, var(--wprai-accent) 55%, transparent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--wprai-accent) 20%, transparent);
+}
+
+.wprai-log {
+	background: #f1f5f9;
+	border: 1px solid rgba(15, 23, 42, 0.1);
+	border-radius: var(--wprai-radius-sm);
+	color: #0f172a;
+	padding: 12px;
+	font-size: 12px;
+	line-height: 1.5;
+	min-height: 120px;
+	max-height: 260px;
+	overflow: auto;
+}
+
+.wprai-textarea {
+	background: #f8fafc;
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	border-radius: var(--wprai-radius-sm);
+	color: #0f172a;
+	padding: 12px;
+	width: 100%;
+	min-height: 140px;
+}
+
+.wprai-textarea:focus {
+	outline: none;
+	border-color: rgba(249, 115, 22, 0.65);
+	box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+.wprai-log-list {
+	display: grid;
+	gap: 8px;
+}
+
+.wprai-log-row {
+	background: #f1f5f9;
+	border: 1px solid rgba(15, 23, 42, 0.1);
+	border-radius: var(--wprai-radius-sm);
+	padding: 10px 12px;
+	color: #0f172a;
+	font-size: 12px;
+}
+
+.wprai-modal {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
+
+.wprai-modal.hidden {
+	display: none;
+}
+
+.wprai-modal-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.55);
+}
+
+.wprai-modal-content {
+	position: relative;
+	background: var(--wprai-card);
+	border: 1px solid rgba(15, 23, 42, 0.08);
+	border-radius: var(--wprai-radius-lg);
+	padding: 18px;
+	width: min(780px, 90vw);
+	max-height: 80vh;
+	overflow: auto;
+	box-shadow: 0 12px 34px rgba(15, 23, 42, 0.14);
+}
+
+.wprai-modal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.wprai-steps {
+	display: grid;
+	gap: 10px;
+	margin-bottom: 16px;
+}
+
+.wprai-step {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 10px;
+	align-items: center;
+	padding: 10px 12px;
+	border-radius: var(--wprai-radius-sm);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	background: var(--wprai-card-2);
+	opacity: 0;
+	transform: translateY(10px);
+	transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.wprai-step.visible {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.wprai-step-dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 999px;
+	background: #94a3b8;
+}
+
+.wprai-step.running .wprai-step-dot {
+	background: color-mix(in srgb, var(--wprai-accent) 70%, #fff);
+}
+
+.wprai-step.done .wprai-step-dot {
+	background: #4ade80;
+}
+
+.wprai-step-label {
+	color: var(--wprai-text);
+	font-weight: 600;
+}
+
+.wprai-step-status {
+	color: var(--wprai-muted);
+	font-size: 12px;
+}
+
+.wprai-modal-logs {
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+	padding-top: 10px;
+}
+
+.wprai-modal-logs ul {
+	margin: 0;
+	padding-left: 16px;
+	color: var(--wprai-text);
+	display: grid;
+	gap: 4px;
+	font-size: 13px;
+}
+
+.wprai-scanner-hero .wprai-inline-actions {
+	margin-top: 0;
+}
+
+.wprai-scan-summary {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 12px;
+	margin-top: 12px;
+}
+
+.wprai-scan-summary-lite .wprai-status-value {
+	color: #0f172a;
+}

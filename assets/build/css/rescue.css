@@ -1,0 +1,199 @@
+/* External rescue page styling (light, warm accent). */
+:root {
+	--background: 210 40% 98%;
+	--foreground: 220 15% 15%;
+	--card: 0 0% 100%;
+	--muted: 215 33% 95%;
+	--muted-foreground: 215 16% 35%;
+	--accent: 24 95% 58%;
+	--accent-foreground: 33 100% 96%;
+
+	--wprai-bg: hsl(var(--background));
+	--wprai-card: hsl(var(--card));
+	--wprai-text: hsl(var(--foreground));
+	--wprai-muted: hsl(var(--muted-foreground));
+	--wprai-accent: hsl(var(--accent));
+	--wprai-accent-foreground: hsl(var(--accent-foreground));
+	--wprai-radius-lg: 12px;
+	--wprai-radius-sm: 8px;
+	color-scheme: dark;
+}
+
+body.wprai-rescue-body {
+	margin: 0;
+	padding: 0;
+	min-height: 100vh;
+	background: var(--wprai-bg);
+	font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	color: var(--wprai-text);
+	display: flex;
+	justify-content: center;
+	padding: 20px;
+}
+
+.wprai-rescue-shell {
+	width: min(1100px, 100%);
+	background: #ffffff;
+	border: 1px solid rgba(15, 23, 42, 0.08);
+	border-radius: var(--wprai-radius-lg);
+	padding: 20px;
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.wprai-rescue-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 12px;
+}
+
+.wprai-rescue-header h1 {
+	margin: 6px 0;
+	font-size: 24px;
+	color: var(--wprai-text);
+}
+
+.wprai-subtle {
+	color: var(--wprai-muted);
+	font-size: 13px;
+	line-height: 1.6;
+	margin: 0;
+}
+
+.wprai-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	background: linear-gradient(135deg, color-mix(in srgb, var(--wprai-accent) 18%, transparent), color-mix(in srgb, var(--wprai-accent) 8%, transparent));
+	color: var(--wprai-text);
+	border: 1px solid color-mix(in srgb, var(--wprai-accent) 35%, transparent);
+}
+
+.wprai-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	border: 1px solid rgba(74, 222, 128, 0.5);
+	background: rgba(74, 222, 128, 0.15);
+	color: #166534;
+}
+
+.wprai-rescue-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: 14px;
+	margin-top: 10px;
+}
+
+.wprai-card {
+	background: var(--wprai-card);
+	border: 1px solid rgba(15, 23, 42, 0.08);
+	border-radius: var(--wprai-radius-lg);
+	padding: 18px;
+	box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.wprai-card h3 {
+	margin: 0 0 6px;
+	color: var(--wprai-text);
+	font-size: 16px;
+}
+
+.wprai-inline-actions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin: 10px 0;
+}
+
+.wprai-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 12px 16px;
+	background: color-mix(in srgb, var(--wprai-accent) 85%, #fff);
+	color: var(--wprai-accent-foreground, #0b0f1a);
+	font-weight: 700;
+	border: none;
+	border-radius: var(--wprai-radius-sm);
+	cursor: pointer;
+	transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+	box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+}
+
+.wprai-button:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16);
+}
+
+.wprai-button.ghost {
+	background: transparent;
+	color: var(--wprai-text);
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	box-shadow: none;
+}
+
+.wprai-log {
+	background: #f1f5f9;
+	border: 1px solid rgba(15, 23, 42, 0.1);
+	border-radius: var(--wprai-radius-sm);
+	color: #0f172a;
+	padding: 12px;
+	font-size: 12px;
+	line-height: 1.5;
+	min-height: 150px;
+	max-height: 320px;
+	overflow: auto;
+}
+
+.wprai-rescue-hero {
+	text-align: center;
+}
+
+.wprai-hero-button-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	margin: 10px 0 14px;
+}
+
+.wprai-button-large {
+	width: 220px;
+	height: 52px;
+	font-size: 16px;
+}
+
+.wprai-status-lite {
+	margin: 8px 0;
+}
+
+.wprai-suspect-row {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	justify-content: center;
+	color: var(--wprai-muted);
+}
+
+.wprai-loglist {
+	display: grid;
+	gap: 6px;
+}
+
+.wprai-logline {
+	background: #f8fafc;
+	border: 1px solid rgba(15, 23, 42, 0.08);
+	border-radius: var(--wprai-radius-sm);
+	padding: 8px 10px;
+	font-size: 12px;
+	color: #0f172a;
+}
