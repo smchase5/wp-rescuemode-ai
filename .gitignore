@@ -1,0 +1,5 @@
+debug_trace.log
+*.log
+.DS_Store
+node_modules/
+assets/build/

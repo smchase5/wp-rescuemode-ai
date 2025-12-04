@@ -8,27 +8,27 @@
  * Text Domain: wp-rescuemode-ai
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
 	exit;
 }
 
-define( 'WPRAI_PLUGIN_FILE', __FILE__ );
-define( 'WPRAI_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'WPRAI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WPRAI_VERSION', '0.1.0' );
+define('WPRAI_PLUGIN_FILE', __FILE__);
+define('WPRAI_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('WPRAI_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('WPRAI_VERSION', '0.1.2');
 
 require_once WPRAI_PLUGIN_DIR . 'inc/helpers.php';
 
 // Simple PSR-4ish loader for this plugin's classes.
 spl_autoload_register(
-	static function ( $class ) {
-		if ( 0 !== strpos( $class, 'WPRAI\\' ) ) {
+	static function ($class) {
+		if (0 !== strpos($class, 'WPRAI\\')) {
 			return;
 		}
 
-		$path = WPRAI_PLUGIN_DIR . 'inc/' . strtolower( str_replace( [ 'WPRAI\\', '_' ], [ '', '-' ], $class ) ) . '.php';
+		$path = WPRAI_PLUGIN_DIR . 'inc/' . strtolower(str_replace(['WPRAI\\', '_'], ['', '-'], $class)) . '.php';
 
-		if ( file_exists( $path ) ) {
+		if (file_exists($path)) {
 			require_once $path;
 		}
 	}

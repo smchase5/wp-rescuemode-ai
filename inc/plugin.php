@@ -67,6 +67,30 @@ class Plugin
 		add_action('rest_api_init', [$this, 'register_endpoints']);
 		add_action('admin_notices', [$this, 'maybe_show_mu_loader_notice']);
 		add_filter('script_loader_tag', [$this, 'add_type_attribute'], 10, 3);
+		add_filter('wp_php_error_message', [$this, 'add_rescue_link_to_error_message'], 10, 2);
+	}
+
+	/**
+	 * Add rescue link to critical error message.
+	 *
+	 * @param string $message The error message.
+	 * @param array  $error   The error details.
+	 * @return string
+	 */
+	public function add_rescue_link_to_error_message($message, $error)
+	{
+		$url = $this->get_rescue_url();
+		if (!$url) {
+			return $message;
+		}
+
+		$button = sprintf(
+			'<p style="margin-top:20px;"><a href="%s" class="button button-primary button-large" style="background:#d63638;border-color:#d63638;color:white;text-decoration:none;padding:10px 20px;border-radius:4px;">%s</a></p>',
+			esc_url($url),
+			esc_html__('Enter Rescue Mode', 'wp-rescuemode-ai')
+		);
+
+		return $message . $button;
 	}
 
 	/**
@@ -228,9 +252,9 @@ class Plugin
 		nocache_headers();
 		status_header(200);
 
-		$css_url = WPRAI_PLUGIN_URL . 'assets/build/css/rescue.css';
-		$tailwind_url = WPRAI_PLUGIN_URL . 'assets/build/css/tailwind.css';
-		$js_url = WPRAI_PLUGIN_URL . 'assets/build/js/rescue.js';
+		$css_url = WPRAI_PLUGIN_URL . 'assets/build/css/rescue.css?ver=' . WPRAI_VERSION;
+		$tailwind_url = WPRAI_PLUGIN_URL . 'assets/build/css/tailwind.css?ver=' . WPRAI_VERSION;
+		$js_url = WPRAI_PLUGIN_URL . 'assets/build/js/rescue.js?ver=' . WPRAI_VERSION;
 		?>
 		<!DOCTYPE html>
 		<html <?php language_attributes(); ?>>
@@ -248,52 +272,6 @@ class Plugin
 				data-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/diagnose')); ?>"
 				data-email-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/generate-email')); ?>"
 				data-token="<?php echo esc_attr($token); ?>" data-rescue-url="<?php echo esc_attr($this->get_rescue_url()); ?>">
-				<div class="wprai-rescue-header">
-					<div>
-						<div class="wprai-badge"><?php esc_html_e('WP Rescue Suite', 'wp-rescuemode-ai'); ?></div>
-						<h1><?php esc_html_e('Rescue Mode', 'wp-rescuemode-ai'); ?></h1>
-						<p class="wprai-subtle">
-							<?php esc_html_e('AI will read your latest debug log, spot failing plugins, and can safely disable them.', 'wp-rescuemode-ai'); ?>
-						</p>
-					</div>
-					<div class="wprai-chip success"><?php esc_html_e('Token verified', 'wp-rescuemode-ai'); ?></div>
-				</div>
-
-				<div class="wprai-rescue-grid">
-					<div class="wprai-card">
-						<h3><?php esc_html_e('AI Actions', 'wp-rescuemode-ai'); ?></h3>
-						<p class="wprai-subtle">
-							<?php esc_html_e('Let AI diagnose or apply a safe plugin disable if it finds a likely culprit.', 'wp-rescuemode-ai'); ?>
-						</p>
-						<div class="wprai-inline-actions">
-							<button class="wprai-button"
-								data-wprai-rescue-run="diagnose"><?php esc_html_e('Diagnose', 'wp-rescuemode-ai'); ?></button>
-							<button class="wprai-button ghost"
-								data-wprai-rescue-run="fix"><?php esc_html_e('Diagnose + Apply fix', 'wp-rescuemode-ai'); ?></button>
-						</div>
-						<pre id="wprai-rescue-output" class="wprai-log"></pre>
-					</div>
-					<div class="wprai-card">
-						<h3><?php esc_html_e('Recent Errors', 'wp-rescuemode-ai'); ?></h3>
-						<p class="wprai-subtle">
-							<?php esc_html_e('We will show the tail of debug.log so you can spot patterns quickly.', 'wp-rescuemode-ai'); ?>
-						</p>
-						<pre id="wprai-rescue-log" class="wprai-log"></pre>
-					</div>
-					<div class="wprai-card">
-						<h3><?php esc_html_e('Developer Email', 'wp-rescuemode-ai'); ?></h3>
-						<p class="wprai-subtle">
-							<?php esc_html_e('Generate a clear email for your plugin developer with the latest errors.', 'wp-rescuemode-ai'); ?>
-						</p>
-						<div class="wprai-inline-actions">
-							<button class="wprai-button"
-								data-wprai-email="generate"><?php esc_html_e('Generate Email', 'wp-rescuemode-ai'); ?></button>
-							<button class="wprai-button ghost"
-								data-wprai-email-copy="1"><?php esc_html_e('Copy', 'wp-rescuemode-ai'); ?></button>
-						</div>
-						<textarea id="wprai-rescue-email" class="wprai-log" style="min-height:160px;" readonly></textarea>
-					</div>
-				</div>
 			</div>
 			<script type="module" src="<?php echo esc_url($js_url); ?>"></script>
 		</body>
@@ -355,7 +333,7 @@ class Plugin
 	 *
 	 * @return string
 	 */
-	private function generate_and_store_rescue_token()
+	public function generate_and_store_rescue_token()
 	{
 		$token = wp_generate_password(24, false, false);
 		update_option(self::OPTION_RESCUE_TOKEN, $token, false);

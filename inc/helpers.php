@@ -224,6 +224,14 @@ function wprai_disable_plugin_folder($plugin_file)
 	$target = $source . '.disabled-wpra';
 
 	if (!is_dir($source)) {
+		// If source is missing, check if it was already renamed
+		if (is_dir($target)) {
+			return [
+				'success' => false,
+				'message' => __('Folder already disabled.', 'wp-rescuemode-ai'),
+			];
+		}
+
 		return [
 			'success' => false,
 			'message' => __('Plugin folder not found.', 'wp-rescuemode-ai'),

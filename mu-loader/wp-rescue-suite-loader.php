@@ -12,12 +12,57 @@ if (!defined('ABSPATH')) {
 
 $plugin_dir = WP_CONTENT_DIR . '/plugins/wp-rescuemode-ai/wp-rescuemode-ai.php';
 
-$request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
-$is_rescue_request = (!empty($request_uri) && preg_match('#/wp-rescue(/?$|\?)#', $request_uri));
+$request_uri = $_SERVER['REQUEST_URI'] ?? '';
+$is_rescue_page = (!empty($request_uri) && preg_match('#/wp-rescue(/?$|\?)#', $request_uri));
+$is_rescue_api = (!empty($request_uri) && strpos($request_uri, '/wp-rescuemode/v1/') !== false);
+$is_rescue_request = $is_rescue_page || $is_rescue_api;
 
-if (defined('WP_CONTENT_DIR')) {
-	file_put_contents(WP_CONTENT_DIR . '/mu-loader-debug.log', "Request URI: " . $_SERVER['REQUEST_URI'] . " | Is Rescue: " . ($is_rescue_request ? 'YES' : 'NO') . "\n", FILE_APPEND);
-}
+// if (defined('WP_CONTENT_DIR')) {
+// 	file_put_contents(WP_CONTENT_DIR . '/mu-loader-debug.log', "Request URI: " . $_SERVER['REQUEST_URI'] . " | Is Rescue: " . ($is_rescue_request ? 'YES' : 'NO') . "\n", FILE_APPEND);
+// }
+
+// Emergency Shutdown Handler: Show Rescue Bubble on Fatal Errors
+register_shutdown_function(function () {
+	$error = error_get_last();
+	// Check for fatal errors
+	if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+
+		// Handle API Errors with JSON
+		if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/wp-rescuemode/v1/') !== false) {
+			if (!headers_sent()) {
+				header('Content-Type: application/json');
+				http_response_code(500);
+			}
+			echo json_encode([
+				'code' => 'fatal_error',
+				'message' => $error['message'],
+				'file' => $error['file'],
+				'line' => $error['line']
+			]);
+			exit;
+		}
+
+		// Avoid showing bubble if we are already in rescue mode page
+		if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/wp-rescue') !== false) {
+			return;
+		}
+
+		if (function_exists('get_option') && function_exists('site_url')) {
+			$token = get_option('wprai_rescue_token');
+			if ($token) {
+				$url = site_url('/wp-rescue?token=' . rawurlencode($token));
+				echo sprintf(
+					'<div style="position:fixed;bottom:20px;right:20px;z-index:999999;background:#fff;padding:20px;border-left:5px solid #d63638;box-shadow:0 5px 20px rgba(0,0,0,0.2);font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif;">
+						<h3 style="margin:0 0 10px;color:#d63638;font-size:18px;">Site Crashed?</h3>
+						<p style="margin:0 0 15px;color:#333;font-size:14px;">Use Rescue Mode to diagnose and fix the issue.</p>
+						<a href="%s" style="background:#d63638;color:white;text-decoration:none;padding:10px 15px;border-radius:4px;display:inline-block;font-weight:bold;font-size:14px;">Enter Rescue Mode &rarr;</a>
+					</div>',
+					esc_url($url)
+				);
+			}
+		}
+	}
+});
 
 if ($is_rescue_request) {
 	// Disable all other plugins for this request so a crashing plugin doesn't block rescue.
@@ -35,103 +80,55 @@ if ($is_rescue_request) {
 	);
 
 	// Bypass theme/template and render a minimal rescue shell to avoid theme/plugin fatals.
-	add_action(
-		'template_redirect',
-		static function () {
-			$token = isset($_GET['token']) ? sanitize_text_field(wp_unslash($_GET['token'])) : '';
-			$stored = get_option('wprai_rescue_token');
+	if ($is_rescue_page) {
+		add_action(
+			'template_redirect',
+			static function () {
+				$token = isset($_GET['token']) ? sanitize_text_field(wp_unslash($_GET['token'])) : '';
+				$stored = get_option('wprai_rescue_token');
 
-			if (empty($token) || !is_string($stored) || !hash_equals($stored, $token)) {
-				status_header(401);
-				wp_die(esc_html__('Invalid or missing rescue token.', 'wp-rescuemode-ai'));
-			}
+				if (empty($token) || !is_string($stored) || !hash_equals($stored, $token)) {
+					status_header(401);
+					wp_die(esc_html__('Invalid or missing rescue token.', 'wp-rescuemode-ai'));
+				}
 
-			$css_url = plugins_url('assets/build/css/rescue.css', '/wp-rescuemode-ai/wp-rescuemode-ai.php');
-			$js_url = plugins_url('assets/build/js/rescue.js', '/wp-rescuemode-ai/wp-rescuemode-ai.php');
+				$ver = defined('WPRAI_VERSION') ? WPRAI_VERSION : '0.1.2';
+				$plugin_url = content_url('plugins/wp-rescuemode-ai');
+				// $css_url = $plugin_url . '/assets/build/css/rescue.css?ver=' . $ver;
+				$tailwind_url = $plugin_url . '/assets/build/css/tailwind.css?ver=' . $ver;
+				$js_url = $plugin_url . '/assets/build/js/rescue.js?ver=' . $ver;
 
-			nocache_headers();
-			status_header(200);
-			?>
-		<!DOCTYPE html>
-		<html <?php language_attributes(); ?>>
+				nocache_headers();
+				status_header(200);
+				?>
+			<!DOCTYPE html>
+			<html <?php language_attributes(); ?>>
 
-		<head>
-			<meta charset="<?php bloginfo('charset'); ?>">
-			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<title><?php esc_html_e('WP RescueMode AI', 'wp-rescuemode-ai'); ?></title>
-			<link rel="stylesheet" href="<?php echo esc_url($css_url); ?>" />
-		</head>
+			<head>
+				<meta charset="<?php bloginfo('charset'); ?>">
+				<meta name="viewport" content="width=device-width, initial-scale=1">
+				<title><?php esc_html_e('WP RescueMode AI', 'wp-rescuemode-ai'); ?></title>
+				<link rel="stylesheet" href="<?php echo esc_url($tailwind_url); ?>" />
+				<!-- <link rel="stylesheet" href="<?php // echo esc_url($css_url); ?>" /> -->
+			</head>
 
-		<body class="wprai-rescue-body">
-			<div id="wprai-rescue-root" class="wprai-rescue-shell"
-				data-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/diagnose')); ?>"
-				data-email-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/generate-email')); ?>"
-				data-token="<?php echo esc_attr($token); ?>"
-				data-rescue-url="<?php echo esc_attr(site_url('/wp-rescue?token=' . rawurlencode($token))); ?>">
-				<div class="wprai-rescue-header">
-					<div>
-						<div class="wprai-badge"><?php esc_html_e('WP Rescue Suite', 'wp-rescuemode-ai'); ?></div>
-						<h1><?php esc_html_e('Rescue Mode', 'wp-rescuemode-ai'); ?></h1>
-						<p class="wprai-subtle">
-							<?php esc_html_e('AI will read your latest debug log, spot failing plugins, and can safely disable them.', 'wp-rescuemode-ai'); ?>
-						</p>
-					</div>
-					<div class="wprai-chip success"><?php esc_html_e('Token verified', 'wp-rescuemode-ai'); ?></div>
+			<body class="wprai-rescue-body">
+				<div id="wprai-rescue-root" class="wprai-rescue-shell"
+					data-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/diagnose')); ?>"
+					data-email-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/generate-email')); ?>"
+					data-token="<?php echo esc_attr($token); ?>"
+					data-rescue-url="<?php echo esc_attr(site_url('/wp-rescue?token=' . rawurlencode($token))); ?>">
 				</div>
+				<script type="module" src="<?php echo esc_url($js_url); ?>"></script>
+			</body>
 
-				<div class="wprai-rescue-grid">
-					<div class="wprai-card wprai-rescue-hero">
-						<h3><?php esc_html_e('Check my site', 'wp-rescuemode-ai'); ?></h3>
-						<p class="wprai-subtle">
-							<?php esc_html_e('Step 1: Diagnose. Step 2: Apply fix to turn off the problem plugin.', 'wp-rescuemode-ai'); ?>
-						</p>
-						<div class="wprai-hero-button-wrap">
-							<button class="wprai-button wprai-button-large"
-								data-wprai-rescue-run="diagnose"><?php esc_html_e('Diagnose', 'wp-rescuemode-ai'); ?></button>
-							<button class="wprai-button ghost"
-								data-wprai-rescue-run="fix"><?php esc_html_e('Apply fix', 'wp-rescuemode-ai'); ?></button>
-						</div>
-						<div class="wprai-status-lite">
-							<p class="wprai-status-label"><?php esc_html_e('Status', 'wp-rescuemode-ai'); ?></p>
-							<p class="wprai-status-value" id="wprai-rescue-status">
-								<?php esc_html_e('Waiting to run…', 'wp-rescuemode-ai'); ?>
-							</p>
-						</div>
-						<div class="wprai-suspect-row" id="wprai-rescue-suspects">
-							<?php esc_html_e('No suspects yet.', 'wp-rescuemode-ai'); ?>
-						</div>
-					</div>
-					<div class="wprai-card">
-						<h3><?php esc_html_e('Recent errors', 'wp-rescuemode-ai'); ?></h3>
-						<p class="wprai-subtle">
-							<?php esc_html_e('Latest debug log lines to show what went wrong.', 'wp-rescuemode-ai'); ?>
-						</p>
-						<div id="wprai-rescue-loglist" class="wprai-loglist"></div>
-					</div>
-					<div class="wprai-card">
-						<h3><?php esc_html_e('Developer email', 'wp-rescuemode-ai'); ?></h3>
-						<p class="wprai-subtle">
-							<?php esc_html_e('Generate a clear email for your plugin developer.', 'wp-rescuemode-ai'); ?>
-						</p>
-						<div class="wprai-inline-actions">
-							<button class="wprai-button"
-								data-wprai-email="generate"><?php esc_html_e('Generate Email', 'wp-rescuemode-ai'); ?></button>
-							<button class="wprai-button ghost"
-								data-wprai-email-copy="1"><?php esc_html_e('Copy', 'wp-rescuemode-ai'); ?></button>
-						</div>
-						<textarea id="wprai-rescue-email" class="wprai-log" style="min-height:160px;" readonly></textarea>
-					</div>
-				</div>
-			</div>
-			<script src="<?php echo esc_url($js_url); ?>"></script>
-		</body>
-
-		</html>
-		<?php
-			exit;
-		},
-		-1000
-	);
+			</html>
+			<?php
+				exit;
+			},
+			-1000
+		);
+	}
 }
 
 if (file_exists($plugin_dir)) {
