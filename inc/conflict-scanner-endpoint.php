@@ -119,6 +119,11 @@ class Conflict_Scanner_Endpoint
 			)
 		);
 
+		// Debug logging
+		$log_file = plugin_dir_path(dirname(__FILE__)) . 'debug_trace.log';
+		file_put_contents($log_file, "WPRAI Scanner: Found " . count($active) . " active plugins after filter.\n", FILE_APPEND);
+		file_put_contents($log_file, "WPRAI Scanner: Filtered list: " . print_r($active, true) . "\n", FILE_APPEND);
+
 		// Format for frontend
 		$nodes = array_map(
 			static function ($p) {

@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 define('WPRAI_PLUGIN_FILE', __FILE__);
 define('WPRAI_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('WPRAI_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('WPRAI_PLUGIN_URL', wp_make_link_relative(plugin_dir_url(__FILE__)));
 define('WPRAI_VERSION', '0.1.2');
 
 require_once WPRAI_PLUGIN_DIR . 'inc/helpers.php';

@@ -9,11 +9,11 @@ export default defineConfig({
     emptyOutDir: false,
     sourcemap: false,
     rollupOptions: {
-      input: {
-        admin: path.resolve(__dirname, "assets/src/admin/index.tsx"),
-        rescue: path.resolve(__dirname, "assets/src/rescue/index.tsx")
-      },
+      input: process.env.TARGET === 'rescue'
+        ? { rescue: path.resolve(__dirname, "assets/src/rescue/index.tsx") }
+        : { admin: path.resolve(__dirname, "assets/src/admin/index.tsx") },
       output: {
+        format: 'iife',
         entryFileNames: "js/[name].js",
         chunkFileNames: "js/[name]-[hash].js",
         assetFileNames: (assetInfo) => {

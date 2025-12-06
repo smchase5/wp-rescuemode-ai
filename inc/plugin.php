@@ -66,7 +66,7 @@ class Plugin
 		add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
 		add_action('rest_api_init', [$this, 'register_endpoints']);
 		add_action('admin_notices', [$this, 'maybe_show_mu_loader_notice']);
-		add_filter('script_loader_tag', [$this, 'add_type_attribute'], 10, 3);
+
 		add_filter('wp_php_error_message', [$this, 'add_rescue_link_to_error_message'], 10, 2);
 	}
 
@@ -93,22 +93,7 @@ class Plugin
 		return $message . $button;
 	}
 
-	/**
-	 * Add type="module" to scripts.
-	 *
-	 * @param string $tag    The script tag.
-	 * @param string $handle The script handle.
-	 * @param string $src    The script src.
-	 * @return string
-	 */
-	public function add_type_attribute($tag, $handle, $src)
-	{
-		if ('wprai-admin' !== $handle && 'wprai-rescue' !== $handle) {
-			return $tag;
-		}
 
-		return '<script type="module" src="' . esc_url($src) . '"></script>';
-	}
 
 	/**
 	 * Activation tasks.
@@ -168,6 +153,9 @@ class Plugin
 		if (empty($screen) || false === strpos($screen->id, 'wprai')) {
 			return;
 		}
+
+		// Debug URL
+		error_log('WPRAI_PLUGIN_URL: ' . WPRAI_PLUGIN_URL);
 
 		$tailwind_path = WPRAI_PLUGIN_DIR . 'assets/build/css/tailwind.css';
 		if (file_exists($tailwind_path)) {
@@ -273,7 +261,7 @@ class Plugin
 				data-email-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/generate-email')); ?>"
 				data-token="<?php echo esc_attr($token); ?>" data-rescue-url="<?php echo esc_attr($this->get_rescue_url()); ?>">
 			</div>
-			<script type="module" src="<?php echo esc_url($js_url); ?>"></script>
+			<script src="<?php echo esc_url($js_url); ?>"></script>
 		</body>
 
 		</html>

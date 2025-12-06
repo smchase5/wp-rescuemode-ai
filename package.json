@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "TARGET=admin vite build && TARGET=rescue vite build",
     "lint": "echo \"Add linting as needed\""
   },
   "dependencies": {

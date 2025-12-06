@@ -14,7 +14,7 @@ $plugin_dir = WP_CONTENT_DIR . '/plugins/wp-rescuemode-ai/wp-rescuemode-ai.php';
 
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 $is_rescue_page = (!empty($request_uri) && preg_match('#/wp-rescue(/?$|\?)#', $request_uri));
-$is_rescue_api = (!empty($request_uri) && strpos($request_uri, '/wp-rescuemode/v1/') !== false);
+$is_rescue_api = (!empty($request_uri) && strpos($request_uri, '/wp-rescuemode/v1/') !== false && strpos($request_uri, '/wp-rescuemode/v1/scan/') === false);
 $is_rescue_request = $is_rescue_page || $is_rescue_api;
 
 // if (defined('WP_CONTENT_DIR')) {
