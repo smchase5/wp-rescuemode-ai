@@ -99,16 +99,36 @@ class Conflict_Scanner_Endpoint
 
 	/**
 	 * Permission check.
+	 * Allows 'manage_options' cap OR a valid rescue token.
 	 *
+	 * @param WP_REST_Request $request Request.
 	 * @return true|WP_Error
 	 */
-	public function can_manage()
+	public function can_manage(WP_REST_Request $request)
 	{
+		// 1. Admin check
 		if (current_user_can('manage_options')) {
 			return true;
 		}
 
-		return new WP_Error('wprai_forbidden', __('You do not have permission to run scans.', 'wp-rescuemode-ai'), ['status' => 403]);
+		// 2. Token check
+		$token = $request->get_param('token');
+		if (!$token) {
+			$token = $request->get_header('x_rescue_token');
+		}
+
+		if ($token) {
+			$valid = get_option(Plugin::OPTION_RESCUE_TOKEN);
+			if ($valid && is_string($valid) && hash_equals($valid, (string) $token)) {
+				return true;
+			}
+		}
+
+		return new WP_REST_Response([
+			'code' => 'wprai_forbidden',
+			'message' => __('You do not have permission to run scans.', 'wp-rescuemode-ai'),
+			'data' => ['status' => 403]
+		], 403);
 	}
 
 	/**
@@ -118,21 +138,33 @@ class Conflict_Scanner_Endpoint
 	 */
 	public function get_plugins()
 	{
-		$plugins = wprai_get_plugins_data();
+		// Check if we have a saved state from an interrupted scan
+		$state = get_transient(Plugin::TRANSIENT_SCAN_STATE);
+		if ($state && !empty($state['active']) && is_array($state['active'])) {
+			$plugins = $state['active'];
+			// These are already formatted with 'file', 'name', 'is_active' from the snapshot
+		} else {
+			// Fallback to current state
+			$plugins = wprai_get_plugins_data();
+			// Filter to only active ones if coming from raw list
+			$plugins = array_filter(
+				$plugins,
+				static function ($plugin) {
+					return !empty($plugin['is_active']);
+				}
+			);
+		}
+
 		$active = array_values(
 			array_filter(
 				$plugins,
 				static function ($plugin) {
-					// Must be active and NOT be us.
-					return !empty($plugin['is_active']) && false === strpos($plugin['file'], 'wp-rescuemode-ai');
+					// Must be active (already checked above or in snapshot) and NOT be us.
+					// Note: Snapshot 'active' list implies is_active=true.
+					return false === strpos($plugin['file'], 'wp-rescuemode-ai');
 				}
 			)
 		);
-
-		// Debug logging
-		$log_file = plugin_dir_path(dirname(__FILE__)) . 'debug_trace.log';
-		file_put_contents($log_file, "WPRAI Scanner: Found " . count($active) . " active plugins after filter.\n", FILE_APPEND);
-		file_put_contents($log_file, "WPRAI Scanner: Filtered list: " . print_r($active, true) . "\n", FILE_APPEND);
 
 		// Format for frontend
 		$nodes = array_map(
@@ -140,7 +172,7 @@ class Conflict_Scanner_Endpoint
 				return [
 					'id' => md5($p['file']),
 					'file' => $p['file'],
-					'name' => $p['name'],
+					'name' => isset($p['name']) ? $p['name'] : $p['file'],
 					'status' => 'pending',
 				];
 			},
@@ -155,8 +187,21 @@ class Conflict_Scanner_Endpoint
 	 *
 	 * @return WP_REST_Response
 	 */
-	public function start_scan()
+	public function start_scan(WP_REST_Request $request)
 	{
+		$mode = $request->get_param('mode');
+		if ($mode === 'admin') {
+			// Virtual Scan: Do NOT deactivate plugins.
+			// Just verify logs are accessible.
+			$log_path = wprai_get_debug_log_path();
+			if (!$log_path || !is_writable(dirname($log_path))) {
+				// We can't easily force WP_DEBUG via plugin if it's off in wp-config.
+				// But we can check if it's working.
+				// For now, let's just proceed. The helper tries its best.
+			}
+			return new WP_REST_Response(['success' => true, 'message' => 'Virtual environment ready.'], 200);
+		}
+
 		$plugins = wprai_get_plugins_data();
 		$active = array_values(
 			array_filter(
@@ -167,8 +212,17 @@ class Conflict_Scanner_Endpoint
 			)
 		);
 
-		// Save snapshot
-		set_transient(Plugin::TRANSIENT_SCAN_STATE, ['active' => $active], HOUR_IN_SECONDS);
+		// Check if we already have a snapshot. If so, DO NOT overwrite it, 
+		// because we might be in a "crashed/stripped" state and we don't want to lose the original state.
+		$existing = get_transient(Plugin::TRANSIENT_SCAN_STATE);
+		if (!$existing || empty($existing['active'])) {
+			// Save snapshot only if one doesn't exist
+			set_transient(Plugin::TRANSIENT_SCAN_STATE, ['active' => $active], HOUR_IN_SECONDS);
+		} else {
+			// Use the existing snapshot for deactivation logic?
+			// Actually, we probably want to ensure everything is off except us.
+			// The deactivate_plugins call below handles "current" active ones, which is fine.
+		}
 
 		// Deactivate all except us
 		$active_files = array_column($active, 'file');
@@ -184,6 +238,15 @@ class Conflict_Scanner_Endpoint
 			deactivate_plugins($to_deactivate, true);
 		}
 
+
+		// Ensure we can read logs
+		$log_path = wprai_get_debug_log_path();
+		if (!$log_path || !is_writable(dirname($log_path))) {
+			// We can't easily force WP_DEBUG via plugin if it's off in wp-config.
+			// But we can check if it's working.
+			// For now, let's just proceed. The helper tries its best.
+		}
+
 		return new WP_REST_Response(['success' => true, 'message' => 'Environment prepared.'], 200);
 	}
 
@@ -196,14 +259,48 @@ class Conflict_Scanner_Endpoint
 	public function test_plugin(WP_REST_Request $request)
 	{
 		$file = $request->get_param('file');
+		$mode = $request->get_param('mode');
 
 		if (!$file) {
 			return new WP_REST_Response(['status' => 'error', 'message' => 'No file provided'], 400);
 		}
 
+		// VIRTUAL SCAN LOGIC
+		if ($mode === 'admin') {
+			$url = site_url('/');
+			$args = [
+				'headers' => [
+					'X-Rescue-Virtual-Plugin' => $file,
+				],
+				'timeout' => 15, // Allow enough time for PHP processing
+				'sslverify' => false, // Local dev often has self-signed certs
+			];
+
+			$response = wp_remote_get($url, $args);
+
+			if (is_wp_error($response)) {
+				return new WP_REST_Response([
+					'status' => 'conflict',
+					'message' => 'Request failed: ' . $response->get_error_message()
+				], 200);
+			}
+
+			$code = wp_remote_retrieve_response_code($response);
+			if ($code >= 500) {
+				return new WP_REST_Response([
+					'status' => 'conflict',
+					'message' => "Site returned HTTP $code (Fatal Error likely)."
+				], 200);
+			}
+
+			// If 200, assume healthy
+			return new WP_REST_Response(['status' => 'healthy'], 200);
+		}
+
+		// ORIGINAL RESCUE MODE LOGIC (Physical Activation)
 		// Capture log baseline
 		$debug_path = wprai_get_debug_log_path();
-		$baseline = $debug_path ? wprai_tail_file($debug_path, 50, 50000) : [];
+		$baseline = $debug_path ? wprai_tail_file($debug_path, 20, 20000) : [];
 
 		// Activate
 		$result = activate_plugin($file, '', false, true);
@@ -231,7 +328,12 @@ class Conflict_Scanner_Endpoint
 				continue;
 			}
 
-			if (stripos($line, 'Fatal error') !== false || stripos($line, 'Parse error') !== false) {
+			if (
+				stripos($line, 'Fatal error') !== false ||
+				stripos($line, 'Parse error') !== false ||
+				stripos($line, 'Uncaught Error') !== false ||
+				stripos($line, 'syntax error') !== false
+			) {
 				$has_error = true;
 				$error_lines[] = wprai_humanize_error($line);
 			}
@@ -256,21 +358,35 @@ class Conflict_Scanner_Endpoint
 	/**
 	 * Restore original state.
 	 *
+	 * @param WP_REST_Request $request
 	 * @return WP_REST_Response
 	 */
-	public function restore_plugins()
+	public function restore_plugins(WP_REST_Request $request)
 	{
 		$state = get_transient(Plugin::TRANSIENT_SCAN_STATE);
 		if (!$state || empty($state['active'])) {
 			return new WP_REST_Response(['success' => false, 'message' => 'No snapshot found.'], 200);
 		}
 
+		$exclude = $request->get_param('exclude'); // Array of file paths
+		if (!is_array($exclude)) {
+			$exclude = [];
+		}
+
 		$files = array_column($state['active'], 'file');
-		activate_plugins($files);
+
+		// Filter out excluded
+		$to_restore = array_diff($files, $exclude);
+
+		if (!empty($to_restore)) {
+			activate_plugins($to_restore);
+		}
 
 		delete_transient(Plugin::TRANSIENT_SCAN_STATE);
 
-		return new WP_REST_Response(['success' => true, 'message' => 'Restored.'], 200);
+		$message = empty($exclude) ? 'Restored.' : 'Restored with exclusions.';
+
+		return new WP_REST_Response(['success' => true, 'message' => $message], 200);
 	}
 
 	/**

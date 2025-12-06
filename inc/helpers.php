@@ -156,22 +156,63 @@ function wprai_detect_plugins_from_log($lines)
  */
 function wprai_get_plugins_data()
 {
-	if (!function_exists('\get_plugins') || !function_exists('\is_plugin_active')) {
+	if (!function_exists('\get_plugins')) {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 	}
 
 	$plugins = get_plugins();
-	$log_file = plugin_dir_path(__DIR__) . 'debug_trace.log';
-	file_put_contents($log_file, 'WPRAI Debug: Found ' . count($plugins) . " total plugins.\n", FILE_APPEND);
 
+	// In Rescue Mode, 'option_active_plugins' is filtered to only include this plugin.
+	// We need the REAL list from the database to know what to test.
+	global $wpdb;
+	$raw_active = [];
+
+	// Try standard first
 	$active_option = get_option('active_plugins', []);
-	file_put_contents($log_file, "WPRAI Debug: active_plugins option: " . print_r($active_option, true) . "\n", FILE_APPEND);
-	file_put_contents($log_file, "WPRAI Debug: is_multisite? " . (is_multisite() ? 'YES' : 'NO') . "\n", FILE_APPEND);
+
+	$debug_log = WP_CONTENT_DIR . '/rescue_debug.log';
+	file_put_contents($debug_log, "Active Option: " . print_r($active_option, true) . "\n", FILE_APPEND);
+
+	// If standard seems filtered (only contains us), try DB direct
+	if (count($active_option) <= 1 || (count($active_option) === 1 && strpos($active_option[0], 'wp-rescuemode-ai') !== false)) {
+		file_put_contents($debug_log, "Detected filtered active_plugins. Attempting DB bypass.\n", FILE_APPEND);
+		if (isset($wpdb) && $wpdb instanceof \wpdb) {
+			$row = $wpdb->get_row($wpdb->prepare("SELECT option_value FROM $wpdb->options WHERE option_name = %s LIMIT 1", 'active_plugins'));
+			if ($row) {
+				$raw_active = maybe_unserialize($row->option_value);
+				file_put_contents($debug_log, "DB Fetch Result: " . print_r($raw_active, true) . "\n", FILE_APPEND);
+			} else {
+				file_put_contents($debug_log, "DB Fetch returned no row.\n", FILE_APPEND);
+			}
+		} else {
+			file_put_contents($debug_log, "WPDB is not available or not instance of wpdb.\n", FILE_APPEND);
+		}
+	} else {
+		file_put_contents($debug_log, "Using standard active_plugins option.\n", FILE_APPEND);
+	}
+
+	// If DB fetch failed or wasn't needed, use standard
+	if (empty($raw_active)) {
+		$raw_active = $active_option;
+	}
+
+	// Ensure array
+	if (!is_array($raw_active)) {
+		$raw_active = [];
+	}
+
+	file_put_contents($debug_log, "Final Raw Active: " . print_r($raw_active, true) . "\n", FILE_APPEND);
+	file_put_contents($debug_log, "Total Installed Plugins: " . count($plugins) . "\n", FILE_APPEND);
 
 	$list = [];
 	foreach ($plugins as $file => $data) {
-		$is_active = is_plugin_active($file) || (function_exists('is_plugin_active_for_network') && is_plugin_active_for_network($file));
-		// file_put_contents( $log_file, "WPRAI Debug: Plugin $file active? " . ( $is_active ? 'YES' : 'NO' ) . "\n", FILE_APPEND );
+		// Manual check against raw list
+		$is_active = in_array($file, $raw_active) || (function_exists('is_plugin_active_for_network') && is_plugin_active_for_network($file));
+
+		// Log one or two just to see
+		if ($is_active) {
+			// file_put_contents($debug_log, "Active Plugin Found: $file\n", FILE_APPEND);
+		}
 
 		$list[] = [
 			'file' => $file,

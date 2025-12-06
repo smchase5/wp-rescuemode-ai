@@ -163,6 +163,9 @@ class Rescue_Endpoint
 	public function validate_rescue_token(WP_REST_Request $request)
 	{
 		$token = $request->get_param('token');
+		if (!$token) {
+			$token = $request->get_header('x_rescue_token');
+		}
 		$valid = get_option(Plugin::OPTION_RESCUE_TOKEN);
 
 		if (!$token || !$valid || !is_string($valid)) {

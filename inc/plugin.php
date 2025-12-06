@@ -264,6 +264,7 @@ class Plugin
 
 		<body class="wprai-rescue-body">
 			<div id="wprai-rescue-root" class="wprai-rescue-shell"
+				data-api-base="<?php echo esc_attr(rest_url('wp-rescuemode/v1/')); ?>"
 				data-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/diagnose')); ?>"
 				data-email-endpoint="<?php echo esc_attr(rest_url('wp-rescuemode/v1/generate-email')); ?>"
 				data-token="<?php echo esc_attr($token); ?>" data-rescue-url="<?php echo esc_attr($this->get_rescue_url()); ?>">
@@ -352,10 +353,9 @@ class Plugin
 		$source = WPRAI_PLUGIN_DIR . 'mu-loader/wp-rescue-suite-loader.php';
 
 		if (file_exists($target)) {
-			// Force update for development to ensure fixes propagate
-			// update_option(self::OPTION_MU_LOADER_STATUS, 'installed', false);
-			// return true;
-			unlink($target);
+			// File exists, assume up to date for now to prevent IO loop.
+			update_option(self::OPTION_MU_LOADER_STATUS, 'installed', false);
+			return true;
 		}
 
 		if (!file_exists($source)) {

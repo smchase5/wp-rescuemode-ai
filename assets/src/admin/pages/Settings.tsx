@@ -66,10 +66,31 @@ const Settings = () => {
         setSettings(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(rescueUrl);
-        setCopyStatus('copied');
-        setTimeout(() => setCopyStatus('idle'), 2000);
+    const handleCopy = async () => {
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(rescueUrl);
+            } else {
+                // Fallback
+                const textArea = document.createElement("textarea");
+                textArea.value = rescueUrl;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                } finally {
+                    document.body.removeChild(textArea);
+                }
+            }
+            setCopyStatus('copied');
+            setTimeout(() => setCopyStatus('idle'), 2000);
+        } catch (e) {
+            console.error('Copy failed', e);
+        }
     };
 
     const handleRegenerate = async () => {
