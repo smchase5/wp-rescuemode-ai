@@ -18,8 +18,15 @@ class Plugin
 {
 	const OPTION_RESCUE_TOKEN = 'wprai_rescue_token';
 	const OPTION_OPENAI_KEY = 'wprai_openai_api_key';
+	const OPTION_AI_MODEL = 'wprai_ai_model';
+	const OPTION_AI_TEMPERATURE = 'wprai_ai_temperature';
+	const OPTION_AUTO_ACTIVATE = 'wprai_auto_activate';
+	const OPTION_EMAIL_NOTIFICATIONS = 'wprai_email_notifications';
+	const OPTION_NOTIFICATION_EMAIL = 'wprai_notification_email';
 	const TRANSIENT_SCAN_STATE = 'wprai_conflict_scan_state';
 	const OPTION_MU_LOADER_STATUS = 'wprai_mu_loader_status';
+	// TODO: Replace with actual default key mechanism if needed
+	const DEFAULT_API_KEY = '';
 
 	/**
 	 * @var Plugin
@@ -290,13 +297,17 @@ class Plugin
 	}
 
 	/**
-	 * Get AI client.
+	 * Get AI client with fallback logic.
 	 *
 	 * @return AI_Client
 	 */
 	public function get_ai_client()
 	{
-		$key = get_option(self::OPTION_OPENAI_KEY, '');
+		$user_key = get_option(self::OPTION_OPENAI_KEY, '');
+		$key = !empty($user_key) ? $user_key : self::DEFAULT_API_KEY;
+
+		// Pass model and temperature configuration to client if we wanted to bind it there,
+		// but for now the client just takes the key.
 		return new AI_Client($key);
 	}
 

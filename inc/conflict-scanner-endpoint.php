@@ -85,6 +85,16 @@ class Conflict_Scanner_Endpoint
 				'permission_callback' => [$this, 'can_manage'],
 			]
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/scan/analyze',
+			[
+				'methods' => WP_REST_Server::CREATABLE,
+				'callback' => [$this, 'analyze_results'],
+				'permission_callback' => [$this, 'can_manage'],
+			]
+		);
 	}
 
 	/**
@@ -261,5 +271,64 @@ class Conflict_Scanner_Endpoint
 		delete_transient(Plugin::TRANSIENT_SCAN_STATE);
 
 		return new WP_REST_Response(['success' => true, 'message' => 'Restored.'], 200);
+	}
+
+	/**
+	 * Analyze scan results with AI.
+	 * 
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
+	 */
+	public function analyze_results(WP_REST_Request $request)
+	{
+		$conflicts = $request->get_param('conflicts'); // Array of {name, error}
+
+		if (empty($conflicts)) {
+			return new WP_REST_Response([
+				'summary' => 'No conflicts detected.',
+				'recommendation' => 'Your site configuration appears to be stable.',
+				'technical_details' => 'No fatal errors were found during the activation scan.',
+				'severity' => 'low'
+			], 200);
+		}
+
+		$prompt = "I ran a conflict scan on my WordPress site and found the following errors. Please analyze them and explain what is wrong in simple terms for a non-technical user. Also provide a recommendation on how to fix it.\n\n";
+
+		foreach ($conflicts as $c) {
+			$prompt .= "Plugin: {$c['name']}\nError: {$c['error']}\n---\n";
+		}
+
+		$prompt .= "\nProvide the response in JSON format with keys: 'summary', 'recommendation', 'technical_details' (simplified), and 'severity' (high/medium/low).";
+
+		try {
+			$ai = $this->plugin->get_ai_client();
+			$data = $ai->chat(
+				[
+					['role' => 'system', 'content' => 'You are a helpful WordPress expert. return only valid JSON.'],
+					['role' => 'user', 'content' => $prompt]
+				],
+				[
+					'response_format' => ['type' => 'json_object'],
+					'temperature' => 0.4
+				]
+			);
+
+			$content = json_decode($data['content'], true);
+
+			// Fallback if JSON parsing failed
+			if (!$content) {
+				throw new \Exception('Invalid JSON from AI');
+			}
+
+			return new WP_REST_Response($content, 200);
+
+		} catch (\Exception $e) {
+			return new WP_REST_Response([
+				'summary' => 'Errors detected, but AI analysis failed.',
+				'recommendation' => 'Please check the technical error logs below or contact a developer.',
+				'technical_details' => $e->getMessage(),
+				'severity' => 'medium'
+			], 200);
+		}
 	}
 }

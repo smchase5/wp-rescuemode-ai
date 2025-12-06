@@ -105,6 +105,53 @@ class Rescue_Endpoint
 				},
 			]
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/settings',
+			[
+				[
+					'methods' => WP_REST_Server::READABLE,
+					'callback' => [$this, 'handle_get_settings'],
+					'permission_callback' => function () {
+						return current_user_can('manage_options');
+					},
+				],
+				[
+					'methods' => WP_REST_Server::CREATABLE,
+					'callback' => [$this, 'handle_save_settings'],
+					'permission_callback' => function () {
+						return current_user_can('manage_options');
+					},
+					'args' => [
+						'openai_key' => [
+							'type' => 'string',
+							'required' => false,
+						],
+						'ai_model' => [
+							'type' => 'string',
+							'required' => false,
+						],
+						'ai_temperature' => [
+							'type' => 'number',
+							'required' => false,
+						],
+						'auto_activate' => [
+							'type' => 'boolean',
+							'required' => false,
+						],
+						'email_notifications' => [
+							'type' => 'boolean',
+							'required' => false,
+						],
+						'notification_email' => [
+							'type' => 'string',
+							'required' => false,
+						],
+					],
+				],
+			]
+		);
 	}
 
 	/**
@@ -251,7 +298,8 @@ class Rescue_Endpoint
 				$messages,
 				[
 					'max_tokens' => 200,
-					'temperature' => 0.2,
+					'temperature' => (float) get_option(Plugin::OPTION_AI_TEMPERATURE, 0.3),
+					'model' => get_option(Plugin::OPTION_AI_MODEL, 'gpt-4o-mini'),
 				]
 			);
 
@@ -315,7 +363,8 @@ class Rescue_Endpoint
 				$messages,
 				[
 					'max_tokens' => 380,
-					'temperature' => 0.2,
+					'temperature' => (float) get_option(Plugin::OPTION_AI_TEMPERATURE, 0.3),
+					'model' => get_option(Plugin::OPTION_AI_MODEL, 'gpt-4o-mini'),
 				]
 			);
 
@@ -356,5 +405,64 @@ class Rescue_Endpoint
 			],
 			200
 		);
+	}
+
+
+	/**
+	 * Get current settings.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function handle_get_settings(WP_REST_Request $request)
+	{
+		return new WP_REST_Response(
+			[
+				'openai_key' => get_option(Plugin::OPTION_OPENAI_KEY, ''),
+				'ai_model' => get_option(Plugin::OPTION_AI_MODEL, 'gpt-4o-mini'),
+				'ai_temperature' => (float) get_option(Plugin::OPTION_AI_TEMPERATURE, 0.3),
+				'auto_activate' => (bool) get_option(Plugin::OPTION_AUTO_ACTIVATE, true),
+				'email_notifications' => (bool) get_option(Plugin::OPTION_EMAIL_NOTIFICATIONS, false),
+				'notification_email' => get_option(Plugin::OPTION_NOTIFICATION_EMAIL, ''),
+			],
+			200
+		);
+	}
+
+	/**
+	 * Save settings.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function handle_save_settings(WP_REST_Request $request)
+	{
+		$params = $request->get_json_params();
+
+		if (isset($params['openai_key'])) {
+			update_option(Plugin::OPTION_OPENAI_KEY, sanitize_text_field($params['openai_key']));
+		}
+
+		if (isset($params['ai_model'])) {
+			update_option(Plugin::OPTION_AI_MODEL, sanitize_text_field($params['ai_model']));
+		}
+
+		if (isset($params['ai_temperature'])) {
+			update_option(Plugin::OPTION_AI_TEMPERATURE, (float) $params['ai_temperature']);
+		}
+
+		if (isset($params['auto_activate'])) {
+			update_option(Plugin::OPTION_AUTO_ACTIVATE, (bool) $params['auto_activate']);
+		}
+
+		if (isset($params['email_notifications'])) {
+			update_option(Plugin::OPTION_EMAIL_NOTIFICATIONS, (bool) $params['email_notifications']);
+		}
+
+		if (isset($params['notification_email'])) {
+			update_option(Plugin::OPTION_NOTIFICATION_EMAIL, sanitize_email($params['notification_email']));
+		}
+
+		return new WP_REST_Response(['status' => 'ok'], 200);
 	}
 }
